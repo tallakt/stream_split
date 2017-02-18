@@ -79,4 +79,23 @@ defmodule StreamSplit do
     {h, t} = take_and_drop enum, n
     {h, Stream.concat(h, t)}
   end
+
+  @doc """
+  This function may be seen as splitting head and tail for a `List`, but for
+  enumerables.
+
+  It is implemented on top of `take_and_drop/2`
+
+  ## Examples
+      iex> {head, tail} = pop(Stream.cycle(1..3))
+      iex> head
+      1
+      iex> Enum.take(tail, 7)
+      [2, 3, 1, 2, 3, 1, 2]
+  """
+  @spec pop(Enumerable.t) :: {any, Enumerable.t}
+  def pop(enum) do
+    {[h], rest} = take_and_drop enum, 1
+    {h, rest}
+  end
 end

@@ -4,7 +4,7 @@ defmodule StreamSplit.Mixfile do
   def project do
     [app: :stream_split,
      description: "Split a stream into a head and tail, without iterating the tail",
-     version: "0.1.0",
+     version: "0.1.2",
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -42,7 +42,7 @@ defmodule StreamSplit.Mixfile do
       links: %{
         "GitHub" => "https://github.com/tallakt/stream_split",
       },
-      files: ~w(lib README.md),
+      files: ~w(lib config mix.exs README.md LICENSE.md),
       build_tools: ~w(mix),
     ]
   end
