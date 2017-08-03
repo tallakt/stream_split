@@ -15,13 +15,16 @@ defmodule StreamSplit do
       [2, 3, 1, 2, 3, 1, 2]
   """
   @spec take_and_drop(Enumerable.t, pos_integer) :: {List.t, Enumerable.t}
-  def take_and_drop(enum, n) when n >= 0 do
+  def take_and_drop(enum, n) when n > 0 do
     case Enumerable.reduce(enum, {:cont, {n, []}}, &reducer_helper/2) do
       {:done, {_, list}} ->
         {:lists.reverse(list), []}
       {:suspended, {_, list}, cont} ->
         {:lists.reverse(list), continuation_to_stream(cont)}
     end
+  end
+  def take_and_drop(enum, 0) do
+    {[], enum}
   end
 
   defp reducer_helper(item, :tail) do
@@ -75,7 +78,7 @@ defmodule StreamSplit do
       [1, 2, 3, 1, 2, 3, 1]
   """
   @spec peek(Enumerable.t, pos_integer) :: {List.t, Enumerable.t}
-  def peek(enum, n) when n > 0 do
+  def peek(enum, n) when n >= 0 do
     {h, t} = take_and_drop enum, n
     {h, Stream.concat(h, t)}
   end
