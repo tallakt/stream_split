@@ -21,6 +21,8 @@ defmodule StreamSplit do
         {:lists.reverse(list), []}
       {:suspended, {_, list}, cont} ->
         {:lists.reverse(list), continuation_to_stream(cont)}
+      {:halted, {_, []}} ->
+        {[], []}
     end
   end
   def take_and_drop(enum, 0) do
