@@ -1,4 +1,7 @@
 defmodule StreamSplit do
+  @enforce_keys [:continuation, :stream]
+  defstruct @enforce_keys
+
   @doc """
   This function is a combination of `Enum.take/2` and `Enum.drop/2` returning
   first `n` dropped elements and the rest of the enum as a stream.
@@ -14,17 +17,31 @@ defmodule StreamSplit do
       iex> Enum.take(tail, 7)
       [2, 3, 1, 2, 3, 1, 2]
   """
-  @spec take_and_drop(Enumerable.t, pos_integer) :: {List.t, Enumerable.t}
+  @spec take_and_drop(Enumerable.t(), pos_integer) :: {List.t(), Enumerable.t()}
   def take_and_drop(enum, n) when n > 0 do
-    case Enumerable.reduce(enum, {:cont, {n, []}}, &reducer_helper/2) do
+    case apply_reduce(enum, n) do
       {:done, {_, list}} ->
         {:lists.reverse(list), []}
+
       {:suspended, {_, list}, cont} ->
-        {:lists.reverse(list), continuation_to_stream(cont)}
+        stream_split = %__MODULE__{continuation: cont, stream: continuation_to_stream(cont)}
+        {:lists.reverse(list), stream_split}
+
+      {:halted, {_, []}} ->
+        {[], []}
     end
   end
+
   def take_and_drop(enum, 0) do
     {[], enum}
+  end
+
+  defp apply_reduce(%__MODULE__{continuation: cont}, n) do
+    cont.({:cont, {n, []}})
+  end
+
+  defp apply_reduce(enum, n) do
+    Enumerable.reduce(enum, {:cont, {n, []}}, &reducer_helper/2)
   end
 
   defp reducer_helper(item, :tail) do
@@ -40,22 +57,24 @@ defmodule StreamSplit do
   end
 
   defp continuation_to_stream(cont) do
-    wrapped =
-      fn {_, _, acc_cont} -> 
-        case acc_cont.({:cont, :tail}) do
-          acc = {:suspended, item, _cont} ->
-            {[item], acc}
-          {:done, acc} ->
-            {:halt, acc}
-        end
+    wrapped = fn {_, _, acc_cont} ->
+      case acc_cont.({:cont, :tail}) do
+        acc = {:suspended, item, _cont} ->
+          {[item], acc}
+
+        {:done, acc} ->
+          {:halt, acc}
       end
-    cleanup =
-      fn
-        {:suspended, _, acc_cont} ->
-          acc_cont.({:halt, nil})
-        _ ->
-          nil
-      end
+    end
+
+    cleanup = fn
+      {:suspended, _, acc_cont} ->
+        acc_cont.({:halt, nil})
+
+      _ ->
+        nil
+    end
+
     Stream.resource(fn -> {:suspended, nil, cont} end, wrapped, cleanup)
   end
 
@@ -77,9 +96,9 @@ defmodule StreamSplit do
       iex> Enum.take(new_enum, 7)
       [1, 2, 3, 1, 2, 3, 1]
   """
-  @spec peek(Enumerable.t, pos_integer) :: {List.t, Enumerable.t}
+  @spec peek(Enumerable.t(), pos_integer) :: {List.t(), Enumerable.t()}
   def peek(enum, n) when n >= 0 do
-    {h, t} = take_and_drop enum, n
+    {h, t} = take_and_drop(enum, n)
     {h, Stream.concat(h, t)}
   end
 
@@ -96,9 +115,21 @@ defmodule StreamSplit do
       iex> Enum.take(tail, 7)
       [2, 3, 1, 2, 3, 1, 2]
   """
-  @spec pop(Enumerable.t) :: {any, Enumerable.t}
+  @spec pop(Enumerable.t()) :: {any, Enumerable.t()}
   def pop(enum) do
-    {[h], rest} = take_and_drop enum, 1
+    {[h], rest} = take_and_drop(enum, 1)
     {h, rest}
+  end
+end
+
+defimpl Enumerable, for: StreamSplit do
+  def count(_stream_split), do: {:error, __MODULE__}
+
+  def member?(_stream_split, _value), do: {:error, __MODULE__}
+
+  def slice(_stream_split), do: {:error, __MODULE__}
+
+  def reduce(%StreamSplit{stream: stream}, acc, fun) do
+    Enumerable.reduce(stream, acc, fun)
   end
 end
