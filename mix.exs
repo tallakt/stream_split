@@ -4,8 +4,8 @@ defmodule StreamSplit.Mixfile do
   def project do
     [app: :stream_split,
      description: "Split a stream into a head and tail, without iterating the tail",
-     version: "0.1.3",
-     elixir: "~> 1.3",
+     version: "0.1.4",
+     elixir: "~> 1.7",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps(),

@@ -31,4 +31,23 @@ defmodule StreamSplitTest do
 
     assert_in_delta final_size / init_size, 1, 0.1
   end
+
+
+  # this bug was fixed in v 0.1.4
+  defmodule StreamSplitBug do
+    def stream() do
+      Stream.resource(
+        fn -> 3 end,
+        fn 0 -> {:halt, :done}
+          x -> {[x], x - 1}
+        end,
+        fn x -> x end
+      )
+    end
+  end
+
+  test "does not crash on halted stream" do
+    assert (StreamSplitBug.stream() |> StreamSplit.take_and_drop(4)) == {[1, 2, 3], []}
+  end
+
 end
