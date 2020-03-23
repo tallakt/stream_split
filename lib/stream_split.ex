@@ -27,8 +27,8 @@ defmodule StreamSplit do
         stream_split = %__MODULE__{continuation: cont, stream: continuation_to_stream(cont)}
         {:lists.reverse(list), stream_split}
 
-      {:halted, {_, []}} ->
-        {[], []}
+      {:halted, {_, list}} ->
+        {list, []}
     end
   end
 
