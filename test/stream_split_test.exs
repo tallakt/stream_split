@@ -47,7 +47,20 @@ defmodule StreamSplitTest do
   end
 
   test "does not crash on halted stream" do
-    assert (StreamSplitBug.stream() |> StreamSplit.take_and_drop(4)) == {[1, 2, 3], []}
+    assert (StreamSplitBug.stream() |> StreamSplit.take_and_drop(4)) == {[3, 2, 1], []}
+  end
+
+  test "returns elems of concat stream in correct order" do
+    stream = Stream.concat([1..2, 3..4, 5..6])
+    {elems1, stream} = StreamSplit.take_and_drop(stream, 3)
+    assert elems1 == [1, 2, 3]
+    {elems2, stream} = StreamSplit.take_and_drop(stream, 10)
+    assert elems2 == [4, 5, 6]
+    assert stream == []
+    stream = Stream.concat([1..2, 3..4, 5..6])
+    {elems, stream} = StreamSplit.take_and_drop(stream, 10)
+    assert elems == [1, 2, 3, 4, 5, 6]
+    assert stream == []
   end
 
 end
