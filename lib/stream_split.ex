@@ -62,6 +62,9 @@ defmodule StreamSplit do
         acc = {:suspended, item, _cont} ->
           {[item], acc}
 
+        {:halted, acc} ->
+          {:halt, acc}
+
         {:done, acc} ->
           {:halt, acc}
       end
